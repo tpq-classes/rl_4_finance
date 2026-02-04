@@ -116,7 +116,7 @@ class DQLAgent:
                     templ += f' | max={self.max_treward:7.2f}'
                     print(templ, end='\r')
                     break
-            if len(self.memory) > self.batch_size:
+            if len(self.memory) > self.batch_size and (e % 5 == 0):
                 self.replay()
         print()
         
