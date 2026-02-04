@@ -30,7 +30,7 @@ class DQLAgent:
         self.epsilon_decay = 0.9975
         self.epsilon_min = 0.1
         self.memory = list()
-        self.batch_size = 32
+        self.batch_size = 128
         self.gamma = 0.5
         self.trewards = deque(maxlen=2000)
         self.max_treward = -np.inf
@@ -132,7 +132,9 @@ class DQLAgent:
             state, _ = self.env.reset()
             state = self._reshape(state)
             for f in range(1, 5001):
-                action = np.argmax(self.model.predict(state)[0])
+                # action = np.argmax(self.model.predict(state)[0])
+                q = self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False)
+                action = int(tf.argmax(q[0]).numpy())
                 state, reward, done, trunc, _ = self.env.step(action)
                 state = self._reshape(state)
                 if done:
