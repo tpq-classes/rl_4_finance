@@ -48,9 +48,8 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "a49941f9",
    "metadata": {},
+   "execution_count": null,
    "outputs": [],
    "source": [
     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
@@ -381,26 +380,13 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "b37d19df",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup"
-   },
-   "source": [
-    "from tensorflow.python.framework.ops import disable_eager_execution\n",
-    "disable_eager_execution()  # <1>"
-   ]
-  },
-  {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "f0721aa2",
-   "metadata": {
-    "auto_refactor_role": "generated"
-   },
+   "execution_count": 18,
+   "id": "a21cd6c5-058b-45cb-abfa-78a9cbb3633b",
+   "metadata": {},
    "outputs": [],
    "source": [
+    "from tensorflow.python.framework.ops import disable_eager_execution\n",
     "disable_eager_execution()  # <1>"
    ]
   },
@@ -463,12 +449,11 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "87306f53",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup"
-   },
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "03e2299c-14bd-4cc8-af41-89b69d532544",
+   "metadata": {},
+   "outputs": [],
    "source": [
     "class DQLAgent(DQLAgent):\n",
     "    def act(self, state):\n",
@@ -482,33 +467,6 @@
     "                reward += self.gamma * np.amax(\n",
     "                    self.model.predict(next_state)[0])  # <4>\n",
     "            target = self.model.predict(state)  # <5>\n",
-    "            target[0, action] = reward  # <6>\n",
-    "            self.model.fit(state, target, epochs=2, verbose=False)  # <7>\n",
-    "        if self.epsilon > self.epsilon_min:\n",
-    "            self.epsilon *= self.epsilon_decay  # <8>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "020d5de9",
-   "metadata": {
-    "auto_refactor_role": "generated"
-   },
-   "outputs": [],
-   "source": [
-    "class DQLAgent(DQLAgent):\n",
-    "    def act(self, state):\n",
-    "        if random.random() < self.epsilon:\n",
-    "            return self.env.action_space.sample()  # <1>\n",
-    "        return np.argmax(self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0])  # <2>\n",
-    "    def replay(self):\n",
-    "        batch = random.sample(self.memory, self.batch_size)  # <3>\n",
-    "        for state, action, next_state, reward, done in batch:\n",
-    "            if not done:\n",
-    "                reward += self.gamma * np.amax(\n",
-    "                    self.model(tf.convert_to_tensor(next_state, dtype=tf.float32), training=False).numpy()[0])  # <4>\n",
-    "            target = self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()  # <5>\n",
     "            target[0, action] = reward  # <6>\n",
     "            self.model.fit(state, target, epochs=2, verbose=False)  # <7>\n",
     "        if self.epsilon > self.epsilon_min:\n",
@@ -547,34 +505,10 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "696d1391",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup"
-   },
-   "source": [
-    "class DQLAgent(DQLAgent):\n",
-    "    def test(self, episodes):\n",
-    "        for e in range(1, episodes + 1):\n",
-    "            state, _ = self.env.reset()\n",
-    "            state = np.reshape(state, [1, 4])\n",
-    "            for f in range(1, 5001):\n",
-    "                action = np.argmax(self.model.predict(state)[0])  # <1>\n",
-    "                state, reward, done, trunc, _ = self.env.step(action)\n",
-    "                state = np.reshape(state, [1, 4])\n",
-    "                if done or trunc:\n",
-    "                    print(f, end=' ')\n",
-    "                    break"
-   ]
-  },
-  {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "5532f37c",
-   "metadata": {
-    "auto_refactor_role": "generated"
-   },
+   "execution_count": 25,
+   "id": "6a44a5f9-af9b-4929-a5c4-19e87f871c78",
+   "metadata": {},
    "outputs": [],
    "source": [
     "class DQLAgent(DQLAgent):\n",
@@ -583,7 +517,7 @@
     "            state, _ = self.env.reset()\n",
     "            state = np.reshape(state, [1, 4])\n",
     "            for f in range(1, 5001):\n",
-    "                action = np.argmax(self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0])  # <1>\n",
+    "                action = np.argmax(self.model.predict(state)[0])  # <1>\n",
     "                state, reward, done, trunc, _ = self.env.step(action)\n",
     "                state = np.reshape(state, [1, 4])\n",
     "                if done or trunc:\n",
@@ -675,8 +609,8 @@
  ],
  "metadata": {
   "kernelspec": {
-   "display_name": "Python 3",
-   "name": "python3"
+   "name": "python3",
+   "display_name": "Python 3"
   },
   "language_info": {
    "codemirror_mode": {

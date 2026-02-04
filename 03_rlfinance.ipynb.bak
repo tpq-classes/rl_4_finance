@@ -40,9 +40,8 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "dd68580f",
    "metadata": {},
+   "execution_count": null,
    "outputs": [],
    "source": [
     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
@@ -403,26 +402,15 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "9a0b8efd",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup"
-   },
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c047b3c4-d7ca-4e17-b290-6dfce70690fc",
+   "metadata": {},
+   "outputs": [],
    "source": [
     "from tensorflow.python.framework.ops import disable_eager_execution\n",
     "disable_eager_execution()"
    ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6791f5ec",
-   "metadata": {
-    "auto_refactor_role": "generated"
-   },
-   "outputs": [],
-   "source": []
   },
   {
    "cell_type": "code",
@@ -435,12 +423,11 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "b780cd8e",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup"
-   },
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9a1c06c7-6477-4a73-9bf5-68b497c52e8c",
+   "metadata": {},
+   "outputs": [],
    "source": [
     "class DQLAgent:\n",
     "    def __init__(self, symbol, feature, min_accuracy, n_features=4):\n",
@@ -507,88 +494,6 @@
     "            state = np.reshape(state, [1, self.n_features])\n",
     "            for f in range(1, 5001):\n",
     "                action = np.argmax(self.model.predict(state)[0])\n",
-    "                state, reward, done, trunc, _ = self.env.step(action)\n",
-    "                state = np.reshape(state, [1, self.n_features])\n",
-    "                if done:\n",
-    "                    print(f'total reward={f} | accuracy={self.env.accuracy:.3f}')\n",
-    "                    break\n",
-    "        self.env.min_accuracy = ma  # <2>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "cde4e8cb",
-   "metadata": {
-    "auto_refactor_role": "generated"
-   },
-   "outputs": [],
-   "source": [
-    "class DQLAgent:\n",
-    "    def __init__(self, symbol, feature, min_accuracy, n_features=4):\n",
-    "        self.epsilon = 1.0\n",
-    "        self.epsilon_decay = 0.9975\n",
-    "        self.epsilon_min = 0.1\n",
-    "        self.memory = list()\n",
-    "        self.batch_size = 32\n",
-    "        self.gamma = 0.5\n",
-    "        self.trewards = deque(maxlen=2000)\n",
-    "        self.max_treward = 0\n",
-    "        self.n_features = n_features\n",
-    "        self._create_model()\n",
-    "        self.env = Finance(symbol, feature,\n",
-    "                    min_accuracy, n_features)  # <1>\n",
-    "    def _create_model(self):\n",
-    "        self.model = Sequential()\n",
-    "        self.model.add(Dense(24, activation='relu',\n",
-    "                             input_dim=self.n_features))\n",
-    "        self.model.add(Dense(24, activation='relu'))\n",
-    "        self.model.add(Dense(2, activation='linear'))\n",
-    "        self.model.compile(loss='mse', optimizer=opt)\n",
-    "    def act(self, state):\n",
-    "        if random.random() < self.epsilon:\n",
-    "            return self.env.action_space.sample()\n",
-    "        return np.argmax(self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0])\n",
-    "    def replay(self):\n",
-    "        batch = random.sample(self.memory, self.batch_size)\n",
-    "        for state, action, next_state, reward, done in batch:\n",
-    "            if not done:\n",
-    "                reward += self.gamma * np.amax(\n",
-    "                    self.model(tf.convert_to_tensor(next_state, dtype=tf.float32), training=False).numpy()[0])\n",
-    "            target = self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()\n",
-    "            target[0, action] = reward\n",
-    "            self.model.fit(state, target, epochs=1, verbose=False)\n",
-    "        if self.epsilon > self.epsilon_min:\n",
-    "            self.epsilon *= self.epsilon_decay\n",
-    "    def learn(self, episodes):\n",
-    "        for e in range(1, episodes + 1):\n",
-    "            state, _ = self.env.reset()\n",
-    "            state = np.reshape(state, [1, self.n_features])\n",
-    "            for f in range(1, 5000):\n",
-    "                action = self.act(state)\n",
-    "                next_state, reward, done, trunc, _ = self.env.step(action)\n",
-    "                next_state = np.reshape(next_state, [1, self.n_features])\n",
-    "                self.memory.append(\n",
-    "                    [state, action, next_state, reward, done])\n",
-    "                state = next_state \n",
-    "                if done:\n",
-    "                    self.trewards.append(f)\n",
-    "                    self.max_treward = max(self.max_treward, f)\n",
-    "                    templ = f'episode={e:4d} | treward={f:4d}'\n",
-    "                    templ += f' | max={self.max_treward:4d}'\n",
-    "                    print(templ, end='\\r')\n",
-    "                    break\n",
-    "            if len(self.memory) > self.batch_size:\n",
-    "                self.replay()\n",
-    "        print()\n",
-    "    def test(self, episodes):\n",
-    "        ma = self.env.min_accuracy  # <2>\n",
-    "        self.env.min_accuracy = 0.5  # <3>\n",
-    "        for e in range(1, episodes + 1):\n",
-    "            state, _ = self.env.reset()\n",
-    "            state = np.reshape(state, [1, self.n_features])\n",
-    "            for f in range(1, 5001):\n",
-    "                action = np.argmax(self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0])\n",
     "                state, reward, done, trunc, _ = self.env.step(action)\n",
     "                state = np.reshape(state, [1, self.n_features])\n",
     "                if done:\n",
@@ -680,8 +585,8 @@
  ],
  "metadata": {
   "kernelspec": {
-   "display_name": "Python 3",
-   "name": "python3"
+   "name": "python3",
+   "display_name": "Python 3"
   },
   "language_info": {
    "codemirror_mode": {

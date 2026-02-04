@@ -40,9 +40,8 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "93283305",
    "metadata": {},
+   "execution_count": null,
    "outputs": [],
    "source": [
     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
@@ -279,13 +278,13 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "a55276d4",
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3ed28631-9d46-4cc5-8573-2d4c5edff9f1",
    "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
     "tags": []
    },
+   "outputs": [],
    "source": [
     "model.predict(X)[:6]"
    ]
@@ -293,24 +292,11 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1513022a",
+   "id": "d1aac7ea-7228-4699-b10a-21c4e4a3ac8a",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
-   "source": [
-    "model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()[:6]"
-   ]
-  },
-  {
-   "cell_type": "raw",
-   "id": "2c40c4c5",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
    "source": [
     "np.where(model.predict(X) > 0.5, 1, 0)[:6]"
    ]
@@ -318,39 +304,13 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "83f995ef",
+   "id": "2e462c06-47a4-483f-a8e2-c7e19fbfb578",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
-   "source": [
-    "np.where(model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy() > 0.5, 1, 0)[:6]"
-   ]
-  },
-  {
-   "cell_type": "raw",
-   "id": "d0f38e49",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
    "source": [
     "y_ = np.where(model.predict(X) > 0.5, 1, 0).flatten()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "e4110cc2",
-   "metadata": {
-    "auto_refactor_role": "generated",
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "y_ = np.where(model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy() > 0.5, 1, 0).flatten()"
    ]
   },
   {
@@ -516,28 +476,15 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "538ebe76",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
-   "source": [
-    "model.predict(X)[:6].flatten()"
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "37dccfe1",
+   "id": "db79de0d-8891-4e84-8f2e-3afab76468b7",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
    "source": [
-    "model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()[:6].flatten()"
+    "model.predict(X)[:6].flatten()"
    ]
   },
   {
@@ -553,28 +500,15 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "edf8c1f8",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
-   "source": [
-    "y_ = model.predict(X).flatten()"
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "37f055fe",
+   "id": "b0d0bdb0-6913-4fa0-a83e-d755d11a9889",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
    "source": [
-    "y_ = model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy().flatten()"
+    "y_ = model.predict(X).flatten()"
    ]
   },
   {
@@ -764,28 +698,15 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "7f9d1be3",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
-   "source": [
-    "model.predict(X)[:6]"
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "59820626",
+   "id": "bcb011af-ac5a-43e3-890d-a7e38a9ad608",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
    "source": [
-    "model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()[:6]"
+    "model.predict(X)[:6]"
    ]
   },
   {
@@ -801,28 +722,15 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "564b252d",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
-   "source": [
-    "y_ = model.predict(X)"
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "4d3e59be",
+   "id": "0731f3ee-fb16-4f1f-9b7e-ef60c14ba181",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
    "source": [
-    "y_ = model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()"
+    "y_ = model.predict(X)"
    ]
   },
   {
@@ -948,28 +856,15 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "99c40329",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
-   "source": [
-    "model.predict(X)[:6]"
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f6b312c0",
+   "id": "0c73e785-bb61-4a0a-84b5-3797b89c7bc9",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
    "source": [
-    "model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()[:6]"
+    "model.predict(X)[:6]"
    ]
   },
   {
@@ -985,28 +880,15 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "ca5d1e8c",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
-   "source": [
-    "y_ = model.predict(X)"
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1c939696",
+   "id": "023856a1-559d-4ef7-b29b-edcb3d865043",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
    "source": [
-    "y_ = model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()"
+    "y_ = model.predict(X)"
    ]
   },
   {
@@ -1046,8 +928,8 @@
  ],
  "metadata": {
   "kernelspec": {
-   "display_name": "Python 3",
-   "name": "python3"
+   "name": "python3",
+   "display_name": "Python 3"
   },
   "language_info": {
    "codemirror_mode": {

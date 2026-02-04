@@ -24,7 +24,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "72bdb334-4ae1-494f-b671-de0839d4c6a0",
+   "id": "72a69f1f-1ff6-4ea2-a1d7-607237aaf45c",
    "metadata": {},
    "source": [
     "### Please use the \"Python 3.10, Tensorflow 2.10\" kernel."
@@ -40,9 +40,8 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "4642e569",
    "metadata": {},
+   "execution_count": null,
    "outputs": [],
    "source": [
     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
@@ -67,6 +66,14 @@
    ]
   },
   {
+   "cell_type": "raw",
+   "id": "020d6a82-f7aa-48b4-8ac9-89383dd22f6b",
+   "metadata": {},
+   "source": [
+    "from pprint import pprint"
+   ]
+  },
+  {
    "cell_type": "code",
    "execution_count": null,
    "id": "e80ce705-6c55-46d9-9199-549d8ea689f8",
@@ -88,15 +95,15 @@
    "outputs": [],
    "source": [
     "class AlmgrenChriss:\n",
-    "    def __init__(self, T, N, S0, sigma, X, eta, gamma, lamb):\n",
+    "    def __init__(self, T, N, S0, sigma, X, gamma, eta, lamb):\n",
     "        self.T = T              \n",
     "        self.N = N           \n",
     "        self.dt = T / N\n",
     "        self.S0 = S0\n",
     "        self.sigma = sigma\n",
     "        self.X = X\n",
-    "        self.eta = eta\n",
     "        self.gamma = gamma\n",
+    "        self.eta = eta\n",
     "        self.lamb = lamb"
    ]
   },
@@ -109,9 +116,10 @@
    "source": [
     "class AlmgrenChriss(AlmgrenChriss):\n",
     "    def optimal_execution(self):\n",
-    "        kappa = np.sqrt(self.lamb * self.sigma ** 2 / self.gamma)\n",
+    "        kappa = np.sqrt(self.lamb * self.sigma ** 2 / self.eta)\n",
     "        t = np.linspace(0, self.T, self.N + 1)\n",
-    "        xt_sum = self.X * np.sinh(kappa * (self.T - t)) / np.sinh(kappa * self.T)\n",
+    "        xt_sum = (self.X * np.sinh(kappa * (self.T - t)) /\n",
+    "                  np.sinh(kappa * self.T))\n",
     "        xt = -np.diff(xt_sum, prepend=0)\n",
     "        xt[0] = 0\n",
     "        return t, xt"
@@ -129,9 +137,10 @@
     "S0 = 1  # <3>\n",
     "sigma = 0.15  # <4>\n",
     "X = 1  # <5>\n",
-    "eta = 0.1  # <6>\n",
-    "gamma = 0.1  # <7>\n",
-    "lamb = 3e-1  # <8>"
+    "gamma = 0.1  # <6>\n",
+    "eta = 0.1  # <7>\n",
+    "lamb_high = 0.2  # <8>\n",
+    "lamb_low = 0.0001  # <8>"
    ]
   },
   {
@@ -141,7 +150,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "ac = AlmgrenChriss(T, N, S0, sigma, X, eta, gamma, lamb)"
+    "ac = AlmgrenChriss(T, N, S0, sigma, X, gamma, eta, lamb_high)"
    ]
   },
   {
@@ -151,7 +160,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "t, xt = ac.optimal_execution()"
+    "t, xth = ac.optimal_execution()"
    ]
   },
   {
@@ -171,17 +180,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "xt.round(2)  # <9>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a5982844-6447-4976-a56c-717c076f2380",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "xt.sum()"
+    "xth.round(3)  # <9>"
    ]
   },
   {
@@ -191,7 +190,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "ac.lamb = 1e-4  # <10>"
+    "ac.lamb = lamb_low"
    ]
   },
   {
@@ -201,8 +200,8 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "t, xt_ = ac.optimal_execution()\n",
-    "xt_.round(2)  # <11>"
+    "t, xtl = ac.optimal_execution()\n",
+    "xtl.round(3)  # <10>"
    ]
   },
   {
@@ -212,14 +211,16 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "plt.plot(t, ac.X - xt.cumsum(), 'r', lw=1,\n",
+    "plt.plot(t, ac.X - xth.cumsum(), 'r', lw=1,\n",
     "         label='high $\\\\lambda$ (position)')\n",
-    "plt.plot(t, xt, 'rs', markersize=4,\n",
+    "plt.plot(t, xth, 'rs', markersize=4,\n",
     "         label='high $\\\\lambda$ (trade)')\n",
-    "plt.plot(t, ac.X- xt_.cumsum(), 'b--', lw=1,\n",
+    "plt.plot(t, ac.X- xtl.cumsum(), 'b--', lw=1,\n",
     "         label='low $\\\\lambda$ (position)')\n",
-    "plt.plot(t, xt_, 'bo', markersize=4,\n",
+    "plt.plot(t, xtl, 'bo', markersize=4,\n",
     "         label='low $\\\\lambda$ (trade)')\n",
+    "plt.xlabel('trading day')\n",
+    "plt.ylabel('shares (normalized to 1)')\n",
     "plt.legend();"
    ]
   },
@@ -250,7 +251,7 @@
     "        for t in range(1, self.N + 1):\n",
     "            dZ = rng.normal(0, np.sqrt(self.dt))\n",
     "            S[t] = S[t - 1] + sigma * dZ  # <1>\n",
-    "            P[t] = S[t] - self.eta * xt[:t + 1].sum()  # <2>\n",
+    "            P[t] = S[t] - self.gamma * xt[:t + 1].sum()  # <2>\n",
     "        return S, P"
    ]
   },
@@ -261,7 +262,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "ac = AlmgrenChriss(T, N, S0, sigma, X, eta, gamma, lamb)"
+    "ac = AlmgrenChriss(T, N, S0, sigma, X, gamma, eta, lamb_high)"
    ]
   },
   {
@@ -271,7 +272,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "t, xt = ac.optimal_execution()"
+    "t, xth = ac.optimal_execution()"
    ]
   },
   {
@@ -281,7 +282,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "xt.round(2)"
+    "xth.round(3)"
    ]
   },
   {
@@ -301,7 +302,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "S, P = ac.simulate_stock_price(xt, seed=seed)"
+    "S, Ph = ac.simulate_stock_price(xth, seed=seed)"
    ]
   },
   {
@@ -311,7 +312,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "ac.lamb = 1e-4"
+    "ac.lamb = lamb_low"
    ]
   },
   {
@@ -321,7 +322,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "t, xt_ = ac.optimal_execution()"
+    "t, xtl = ac.optimal_execution()"
    ]
   },
   {
@@ -331,7 +332,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "xt_.round(2)"
+    "xtl.round(2)"
    ]
   },
   {
@@ -341,7 +342,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "S, P_ = ac.simulate_stock_price(xt_, seed=seed)"
+    "S, Pl = ac.simulate_stock_price(xtl, seed=seed)"
    ]
   },
   {
@@ -352,8 +353,10 @@
    "outputs": [],
    "source": [
     "plt.plot(t, S, 'b', lw=1, label='simulated stock price path')\n",
-    "plt.plot(t, P, 'r--', lw=1, label='adjusted path (high $\\\\lambda$)');\n",
-    "plt.plot(t, P_, 'g:', lw=1, label='adjusted path (low $\\\\lambda$)')\n",
+    "plt.plot(t, Ph, 'r--', lw=1, label='adjusted path (high $\\\\lambda$)')\n",
+    "plt.plot(t, Pl, 'g:', lw=1, label='adjusted path (low $\\\\lambda$)')\n",
+    "plt.xlabel('trading day')\n",
+    "plt.ylabel('stock price (normalized to 1)')\n",
     "plt.legend();"
    ]
   },
@@ -366,8 +369,9 @@
    "source": [
     "class AlmgrenChriss(AlmgrenChriss):\n",
     "    def calculate_costs(self, xt):\n",
-    "        temporary_cost = np.sum(self.gamma * (xt / self.dt) ** 2 * self.dt)\n",
-    "        permanent_cost = np.sum(self.eta * np.cumsum(xt) * xt)\n",
+    "        temporary_cost = np.sum(self.eta *\n",
+    "                    (xt / self.dt) ** 2 * self.dt)\n",
+    "        permanent_cost = np.sum(self.gamma * np.cumsum(xt) * xt)\n",
     "        execution_risk = self.lamb * self.sigma ** 2 * np.sum(\n",
     "            (np.cumsum(xt[::-1])[::-1] / self.dt) ** 2 * self.dt)\n",
     "        TEC = temporary_cost + permanent_cost + execution_risk\n",
@@ -381,7 +385,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "ac = AlmgrenChriss(T, N, S0, sigma, X, eta, gamma, lamb)"
+    "ac = AlmgrenChriss(T, N, S0, sigma, X, gamma, eta, lamb_high)"
    ]
   },
   {
@@ -391,7 +395,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "t, xt = ac.optimal_execution()"
+    "t, xth = ac.optimal_execution()"
    ]
   },
   {
@@ -401,7 +405,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "tc, pc, er, TEC = ac.calculate_costs(xt)"
+    "tc, pc, er, TEC = ac.calculate_costs(xth)"
    ]
   },
   {
@@ -425,7 +429,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "ac.lamb = 1e-4"
+    "ac.lamb = lamb_low"
    ]
   },
   {
@@ -435,7 +439,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "t, xt_ = ac.optimal_execution()"
+    "t, xtl = ac.optimal_execution()"
    ]
   },
   {
@@ -445,7 +449,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "tc, pc, er, TEC = ac.calculate_costs(xt_)"
+    "tc, pc, er, TEC = ac.calculate_costs(xtl)"
    ]
   },
   {
@@ -473,78 +477,21 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e4b6a3d1-0088-4a7d-9143-aa043d97ad04",
-   "metadata": {
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "class observation_space:\n",
-    "    def __init__(self, n):\n",
-    "        self.shape = (n,)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0925d659-0679-4ecc-a9d1-6923179c23cb",
-   "metadata": {
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "class action_space:\n",
-    "    def __init__(self, n):\n",
-    "        self.n = n\n",
-    "    def seed(self, seed):\n",
-    "        random.seed(seed)\n",
-    "    def sample(self):\n",
-    "        return random.random()  # <1>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
    "id": "5f1969da-9cf7-4b6b-af36-d00f05500de5",
    "metadata": {},
    "outputs": [],
    "source": [
     "class Execution:\n",
-    "    def __init__(self, T, N, S0, sigma, X, eta, gamma, lamb):\n",
+    "    def __init__(self, T, N, sigma, X, gamma, eta, lamb):\n",
     "        self.T = T              \n",
     "        self.N = N           \n",
     "        self.dt = T / N\n",
-    "        self.S0 = S0\n",
     "        self.sigma = sigma\n",
     "        self.X = X\n",
-    "        self.eta = eta\n",
     "        self.gamma = gamma\n",
+    "        self.eta = eta\n",
     "        self.lamb = lamb\n",
-    "        self.episode = 0\n",
-    "        self.observation_space = observation_space(3)\n",
-    "        self.osn = self.observation_space.shape[0]\n",
-    "        self.action_space = action_space(1)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f1dd96fc-2952-4aa8-b4df-97ddad46af69",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "class Execution(Execution):\n",
-    "    def _simulate_data(self, seed=None):\n",
-    "        self.dt = T / N\n",
-    "        if hasattr(self, 'seed_'):\n",
-    "            seed = self.seed_\n",
-    "        rng = default_rng(seed=seed)\n",
-    "        self.S = np.zeros(self.N + 1)\n",
-    "        self.S[0] = self.S0\n",
-    "        for t in range(1, self.N + 1):\n",
-    "            dZ = rng.normal(0, np.sqrt(self.dt))\n",
-    "            self.S[t] = self.S[t - 1] + self.sigma * dZ\n",
-    "        return self.S"
+    "        self.episode = 0"
    ]
   },
   {
@@ -556,26 +503,19 @@
    "source": [
     "class Execution(Execution):\n",
     "    def _get_state(self):\n",
-    "        # St = self.S[self.bar]\n",
-    "        # Pt = self.S[self.bar] - self.eta * self.xt.sum()\n",
-    "        return np.array([self.X_,\n",
-    "                         self.bar / self.N,\n",
-    "                         self.x]), {}\n",
-    "    def seed(self, seed=None):\n",
-    "        self.seed = seed\n",
+    "        s = np.array([self.X_,  # <1>\n",
+    "                    self.bar / self.N])  # <2>\n",
+    "        state = np.hstack((self.xt, s))  # <3>\n",
+    "        return state, {}\n",
     "    def reset(self):\n",
     "        self.bar = 0\n",
-    "        self.x = 0\n",
-    "        self.x_ = 0\n",
     "        self.treward = 0\n",
     "        self.episode += 1\n",
-    "        self.X_ = self.X\n",
-    "        self.xt = np.zeros(self.N + 1)\n",
+    "        self.X_ = self.X  # <1>\n",
+    "        self.xt = np.zeros(self.N + 1)  # <4>\n",
     "        self.tec = pd.DataFrame(\n",
-    "            {'pc': 0, 'tc': 0, 'er': 0}, index=[0])\n",
-    "        self._simulate_data()\n",
-    "        self.state, _ = self._get_state()\n",
-    "        return self.state, _"
+    "            {'pc': 0, 'tc': 0, 'er': 0}, index=[0])  # <5>\n",
+    "        return self._get_state()"
    ]
   },
   {
@@ -588,32 +528,31 @@
     "class Execution(Execution):\n",
     "    def step(self, action):\n",
     "        self.bar += 1\n",
-    "        self.xt[self.bar] = action\n",
-    "        self.x_ = self.x\n",
-    "        self.x = action\n",
-    "        self.X_ -= action\n",
-    "        pc = np.sum(self.eta * np.cumsum(self.xt) * self.xt)\n",
-    "        tc = np.sum(self.gamma * (self.xt / self.dt) ** 2 * self.dt)\n",
+    "        self.xt[self.bar] = action  # <1>\n",
+    "        self.X_ -= action  # <2>\n",
+    "        pc = np.sum(self.gamma *\n",
+    "                np.cumsum(self.xt) * self.xt)  # <3>\n",
+    "        tc = np.sum(self.eta *\n",
+    "                (self.xt / self.dt) ** 2 * self.dt)  # <3>\n",
     "        er = self.lamb * self.sigma ** 2 * np.sum(\n",
-    "            (np.cumsum(self.xt[::-1])[::-1] / self.dt) ** 2 * self.dt)\n",
-    "        df = pd.DataFrame({'pc': tc, 'tc': pc, 'er': er}, index=[0])\n",
-    "        self.tec = pd.concat((self.tec, df))\n",
-    "        tec = self.tec.diff().fillna(0).iloc[-1]\n",
-    "        cost = tec.sum()\n",
+    "            (np.cumsum(self.xt[::-1])[::-1] / self.dt) ** 2\n",
+    "            * self.dt)  # <3>\n",
+    "        df = pd.DataFrame({'pc': tc, 'tc': pc, 'er': er},\n",
+    "                          index=[0])  # <3>\n",
+    "        self.tec = pd.concat((self.tec, df))  # <3>\n",
+    "        cost = self.tec.diff().fillna(0).iloc[-1]  # <3>\n",
+    "        tec = cost.sum()  # <3>\n",
     "        self.state, _ = self._get_state()\n",
     "        pen = 0\n",
-    "        reward = 0\n",
     "        if self.bar < self.N:\n",
-    "            if self.X_ < 0.05:\n",
-    "                done = False  # if True it might stop early (before N is reached)\n",
+    "            if self.X_ <= 0.0001:\n",
+    "                done = True\n",
     "            else:\n",
-    "                #pen = abs(self.x - self.x_)\n",
-    "                #reward = self.x\n",
     "                done = False\n",
     "        elif self.bar == self.N:\n",
-    "            pen = abs(self.X_)\n",
+    "            pen = abs(self.X_) * 10  # <4>\n",
     "            done = True\n",
-    "        return self.state, reward-(cost+pen), done, False, {}"
+    "        return self.state, -(tec + pen), done, False, {}"
    ]
   },
   {
@@ -623,7 +562,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "execution = Execution(T, N, S0, sigma, X, eta, gamma, lamb=1e-4)"
+    "execution = Execution(T, N, sigma, X, gamma, eta, lamb_low)"
    ]
   },
   {
@@ -634,7 +573,7 @@
    "outputs": [],
    "source": [
     "execution.reset()\n",
-    "execution.step(1.0)"
+    "execution.step(1.0)  # <1>"
    ]
   },
   {
@@ -654,7 +593,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "execution.step(0.5)"
+    "execution.step(0.5)  # <2>"
    ]
   },
   {
@@ -664,7 +603,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "execution.step(0.5)"
+    "execution.step(0.5)  # <3>"
    ]
   },
   {
@@ -675,14 +614,15 @@
    "outputs": [],
    "source": [
     "execution.reset()\n",
+    "cost = list()\n",
     "for i in range(10):\n",
-    "    execution.step(0.1)\n",
-    "-execution.tec.diff().sum().sum()"
+    "    cost.append(execution.step(0.1)[1])  # <4>\n",
+    "print(f'TEC = {sum(cost):.3f}')"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "560ec3c3-f924-4384-92aa-a3300fc013d4",
+   "id": "dd08f018-48bc-483f-a8d9-b16600b368a6",
    "metadata": {},
    "source": [
     "## Random Agent"
@@ -695,7 +635,17 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "execution = Execution(T, N, S0, sigma, X, eta, gamma, lamb=1e-4)"
+    "execution = Execution(T, N, sigma, X, gamma, eta, lamb_low)  # <1>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "06a6da44-9622-4c12-ab05-d115af7e9791",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rng = default_rng(seed=100)"
    ]
   },
   {
@@ -706,9 +656,9 @@
    "outputs": [],
    "source": [
     "def gen_rn():\n",
-    "    alpha = np.ones(N)\n",
-    "    rn = np.random.dirichlet(alpha)\n",
-    "    rn = np.insert(rn, 0, 0)\n",
+    "    alpha = np.ones(N)  # <2>\n",
+    "    rn = rng.dirichlet(alpha)  # <2>\n",
+    "    rn = np.insert(rn, 0, 0)  # <3>\n",
     "    return rn"
    ]
   },
@@ -720,7 +670,7 @@
    "outputs": [],
    "source": [
     "rn = gen_rn()\n",
-    "rn"
+    "rn  # <4>"
    ]
   },
   {
@@ -730,7 +680,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "rn.sum()"
+    "rn.sum()  # <5>"
    ]
   },
   {
@@ -740,14 +690,24 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "for _ in range(5):\n",
-    "    execution.reset()\n",
-    "    rn = gen_rn()\n",
-    "    print(rn.round(3))\n",
-    "    for i in range(1, 11):\n",
-    "        execution.step(rn[i])\n",
-    "    print(execution.tec.diff().sum().sum())\n",
-    "    print()"
+    "def execute_trades():\n",
+    "    for _ in range(5):\n",
+    "        execution.reset()\n",
+    "        rn = gen_rn()\n",
+    "        for i in range(1, 11):\n",
+    "            execution.step(rn[i])  # <6>\n",
+    "        tec = execution.tec.iloc[-1].sum()\n",
+    "        print(f'TEC = {tec:.3f}')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c11bea56-4d12-4465-bff3-fa78886b4764",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "execute_trades()  # <7>"
    ]
   },
   {
@@ -757,46 +717,31 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "execution = Execution(T, N, S0, sigma, X, eta, gamma, lamb=lamb)"
+    "execution = Execution(T, N, sigma, X, gamma, eta, lamb_high)  # <8>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6b49f055-8ebd-47d3-b1bc-059e330995c3",
+   "id": "94768e3e-7720-472f-8740-8a0caf6b005e",
    "metadata": {},
    "outputs": [],
    "source": [
-    "for _ in range(5):\n",
-    "    execution.reset()\n",
-    "    rn = gen_rn()\n",
-    "    print(rn.round(3))\n",
-    "    for i in range(1, 11):\n",
-    "        execution.step(rn[i])\n",
-    "    print(execution.tec.iloc[-1].sum())\n",
-    "    print()"
+    "execute_trades()  # <9>"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "61df30d7-43e7-4f0f-8bf5-5ed3e7184f7a",
+   "id": "0db5c3a1-9109-43f2-a74a-c1857b158afd",
    "metadata": {},
    "source": [
-    "## Execution Agent "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "0caebcd5-f2e8-4c1f-897a-71a02eb67abf",
-   "metadata": {},
-   "source": [
-    "**_THIS IS WORK IN PROGRESS._**"
+    "## Execution Agent"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "73d4b256-edf2-47f3-9de8-29dbc7407b74",
+   "id": "0b1d2736-0660-42cf-9d44-3fb513d15b93",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -825,8 +770,8 @@
    },
    "outputs": [],
    "source": [
-    "# random.seed(100)\n",
-    "# tf.random.set_seed(100)"
+    "random.seed(100)\n",
+    "tf.random.set_seed(100)"
    ]
   },
   {
@@ -838,8 +783,71 @@
    },
    "outputs": [],
    "source": [
-    "opt = keras.optimizers.legacy.Adam\n",
-    "# opt = keras.optimizers.legacy.RMSprop"
+    "opt = keras.optimizers.legacy.Adam"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "28ed46ce-66af-40c3-b95d-c445c7dc3d14",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class ExecutionAgent(DQLAgent):\n",
+    "    def __init__(self, symbol, feature, n_features, env,\n",
+    "                 hu=24, lr=0.0001, rng='equal'):\n",
+    "        self.epsilon = 1.0\n",
+    "        self.epsilon_decay = 0.9975\n",
+    "        self.epsilon_min = 0.1\n",
+    "        self.memory = deque(maxlen=2000)\n",
+    "        self.batch_size = 32\n",
+    "        self.eta = 1.0\n",
+    "        self.trewards = list()\n",
+    "        self.max_treward = -np.inf\n",
+    "        self.n_features = n_features\n",
+    "        self.env = env\n",
+    "        self.episodes = 0\n",
+    "        self.rng = rng\n",
+    "        self._generate_rn()  # <1>\n",
+    "        self.actor = self._create_model(hu, lr, 'sigmoid')  # <2>\n",
+    "        self.critic = self._create_model(hu, lr, 'linear')  # <3>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f512022f-273a-4219-a42b-152ec20a1df4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class ExecutionAgent(ExecutionAgent):\n",
+    "    def _generate_rn(self):\n",
+    "        if self.rng == 'equal':\n",
+    "            alpha = np.ones(self.env.N)  # <1>\n",
+    "        elif self.rng == 'decreasing':\n",
+    "            alpha = range(self.env.N, 0, -1)   # <2>\n",
+    "        else:\n",
+    "            alpha = rng.random(self.env.N)  # <3>\n",
+    "        rn = rng.dirichlet(alpha)\n",
+    "        self.rn = np.insert(rn, 0, 0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "182b0f84-fab8-428e-8cb1-d20549f607aa",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class ExecutionAgent(ExecutionAgent): \n",
+    "    def _create_model(self, hu, lr, out_activation):\n",
+    "        model = Sequential()\n",
+    "        model.add(Dense(hu, input_dim=self.n_features,\n",
+    "                        activation='relu'))\n",
+    "        model.add(Dense(hu, activation='relu'))\n",
+    "        model.add(Dense(1, activation=out_activation))\n",
+    "        model.compile(loss='mse', optimizer=opt(learning_rate=lr))\n",
+    "        return model"
    ]
   },
   {
@@ -851,122 +859,20 @@
    },
    "outputs": [],
    "source": [
-    "class ExecutionAgent(DQLAgent):\n",
-    "    def _create_model(self, hu, lr):\n",
-    "        self.model = Sequential()\n",
-    "        self.model.add(Dense(hu, input_dim=self.n_features,\n",
-    "                        activation='relu'))\n",
-    "        self.model.add(Dense(hu, activation='relu'))\n",
-    "        self.model.add(Dense(1, activation='linear'))\n",
-    "        self.model.compile(loss='mse',\n",
-    "                optimizer=opt(learning_rate=lr))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "492e76bc-0a34-4792-b91c-8a51181acfbb",
-   "metadata": {
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "from scipy.optimize import minimize"
-   ]
-  },
-  {
-   "cell_type": "raw",
-   "id": "baf67a8f",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
-   "source": [
-    "class ExecutionAgent(ExecutionAgent):\n",
-    "    def opt_action(self, state):\n",
-    "        bnds = [(0, state[0, 0])]\n",
-    "        def f(state, x):\n",
-    "            s = np.copy(state)\n",
-    "            s[0, 2] = x\n",
-    "            return self.model.predict(s)[0, 0]\n",
-    "        action = minimize(lambda x: -f(state, x),\n",
-    "                          state[0, 0] / 2,\n",
-    "                          bounds=bnds,\n",
-    "                          method='Powell'\n",
-    "                         )['x'][0]\n",
-    "        return action\n",
-    "        \n",
+    "class ExecutionAgent(ExecutionAgent):    \n",
     "    def act(self, state):\n",
-    "        if random.random() <= self.epsilon or self.episodes < 250:\n",
-    "            return min(self.rn[self.f], state[0, 0])\n",
-    "        else: \n",
-    "            return self.opt_action(state)"
+    "        if random.random() <= self.epsilon or self.episodes < 250:  # <1>\n",
+    "            return min(self.rn[self.f], state[0, -2])  # <2>\n",
+    "        else:\n",
+    "            action = self.actor.predict(state)[0, 0]  # <3>\n",
+    "        return action"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f4c7f65c",
+   "id": "f14d3677-9499-4c71-973e-3b9008028dcc",
    "metadata": {
-    "auto_refactor_role": "generated",
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "class ExecutionAgent(ExecutionAgent):\n",
-    "    def opt_action(self, state):\n",
-    "        bnds = [(0, state[0, 0])]\n",
-    "        def f(state, x):\n",
-    "            s = np.copy(state)\n",
-    "            s[0, 2] = x\n",
-    "            return self.model(tf.convert_to_tensor(s, dtype=tf.float32), training=False).numpy()[0, 0]\n",
-    "        action = minimize(lambda x: -f(state, x),\n",
-    "                          state[0, 0] / 2,\n",
-    "                          bounds=bnds,\n",
-    "                          method='Powell'\n",
-    "                         )['x'][0]\n",
-    "        return action\n",
-    "        \n",
-    "    def act(self, state):\n",
-    "        if random.random() <= self.epsilon or self.episodes < 250:\n",
-    "            return min(self.rn[self.f], state[0, 0])\n",
-    "        else: \n",
-    "            return self.opt_action(state)"
-   ]
-  },
-  {
-   "cell_type": "raw",
-   "id": "f7efad12",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
-   "source": [
-    "class ExecutionAgent(ExecutionAgent):\n",
-    "    def replay(self):\n",
-    "        batch = random.sample(self.memory, self.batch_size)\n",
-    "        for state, action, next_state, reward, done in batch:\n",
-    "            if not done:\n",
-    "                action = self.opt_action(next_state)\n",
-    "                ns = np.copy(next_state)\n",
-    "                ns[0, 2] = action\n",
-    "                reward = (self.gamma *\n",
-    "                    self.model.predict(ns)[0, 0])\n",
-    "            reward = np.array([reward])\n",
-    "            self.model.fit(state, reward, epochs=1,\n",
-    "                           verbose=False)\n",
-    "        if self.epsilon > self.epsilon_min:\n",
-    "            self.epsilon *= self.epsilon_decay"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "2f223daf",
-   "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
@@ -975,56 +881,19 @@
     "    def replay(self):\n",
     "        batch = random.sample(self.memory, self.batch_size)\n",
     "        for state, action, next_state, reward, done in batch:\n",
+    "            target = reward\n",
     "            if not done:\n",
-    "                action = self.opt_action(next_state)\n",
-    "                ns = np.copy(next_state)\n",
-    "                ns[0, 2] = action\n",
-    "                reward = (self.gamma *\n",
-    "                    self.model(tf.convert_to_tensor(ns, dtype=tf.float32), training=False).numpy()[0, 0])\n",
-    "            reward = np.array([reward])\n",
-    "            self.model.fit(state, reward, epochs=1,\n",
-    "                           verbose=False)\n",
+    "                target += self.eta * self.critic.predict(\n",
+    "                        next_state)[0, 0]  # <1>\n",
+    "                self.critic.fit(state, np.array([target]),\n",
+    "                        epochs=1, verbose=False)  # <2>\n",
+    "                # advantage = target - self.critic.predict(state)[0, 0]\n",
+    "                self.actor.fit(state, np.array([action]),\n",
+    "                        # sample_weight=np.array([advantage]),\n",
+    "                        epochs=1, verbose=False)  # <3> \n",
     "        if self.epsilon > self.epsilon_min:\n",
-    "            self.epsilon *= self.epsilon_decay"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "ba2d09f7-6dcc-4f5c-87f0-98ff47ef95b2",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "class ExecutionAgent(ExecutionAgent):\n",
-    "    def learn(self, episodes):\n",
-    "        for e in range(1, episodes + 1):\n",
-    "            self.episodes += 1\n",
-    "            state, _ = self.env.reset()\n",
-    "            state = self._reshape(state)\n",
-    "            treward = 0\n",
-    "            alpha = np.ones(self.env.N)\n",
-    "            rn = np.random.dirichlet(alpha)\n",
-    "            self.rn = np.insert(rn, 0, 0)\n",
-    "            for f in range(1, 5000):\n",
-    "                self.f = f\n",
-    "                action = self.act(state)\n",
-    "                next_state, reward, done, trunc, _ = self.env.step(action)\n",
-    "                treward += reward\n",
-    "                next_state = self._reshape(next_state)\n",
-    "                self.memory.append(\n",
-    "                    [state, action, next_state, reward, done])\n",
-    "                state = next_state \n",
-    "                if done:\n",
-    "                    self.trewards.append(treward)\n",
-    "                    self.max_treward = max(self.max_treward, treward)\n",
-    "                    templ = f'episode={self.episodes:4d} | '\n",
-    "                    templ += f'treward={treward:7.3f}'\n",
-    "                    templ += f' | max={self.max_treward:7.3f}'\n",
-    "                    print(templ, end='\\r')\n",
-    "                    break\n",
-    "            if len(self.memory) > self.batch_size:\n",
-    "                self.replay()\n",
-    "        print()"
+    "            self.epsilon *= self.epsilon_decay\n",
+    "        self._generate_rn()  # <4>"
    ]
   },
   {
@@ -1041,7 +910,7 @@
     "            state = self._reshape(state)\n",
     "            treward = 0\n",
     "            for _ in range(1, self.env.N + 1):\n",
-    "                action = self.opt_action(state)\n",
+    "                action = self.actor.predict(state)[0, 0]  # <1>\n",
     "                state, reward, done, trunc, _ = self.env.step(action)\n",
     "                state = self._reshape(state)\n",
     "                treward += reward\n",
@@ -1060,7 +929,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "execution = Execution(T, N, S0, sigma, X, eta, gamma, lamb=1e-4)"
+    "execution = Execution(T, N, sigma, X, gamma, eta, lamb_low)"
    ]
   },
   {
@@ -1072,28 +941,10 @@
    },
    "outputs": [],
    "source": [
-    "executionagent = ExecutionAgent(None, feature=None, n_features=3,\n",
-    "                     env=execution, hu=24, lr=0.0001)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "d82d5e24-ea19-4381-a19f-7a395ab9207f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "executionagent.gamma = 0.99"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "bf61ef54-2635-4d88-8196-420a679b9fe0",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "executionagent.epsilon_decay = 0.999"
+    "executionagent = ExecutionAgent(None, feature=None,\n",
+    "                    n_features=execution.N + 3,\n",
+    "                    env=execution, hu=64, lr=0.0001,\n",
+    "                    rng='equal')"
    ]
   },
   {
@@ -1105,7 +956,7 @@
    },
    "outputs": [],
    "source": [
-    "episodes = 100"
+    "episodes = 2500"
    ]
   },
   {
@@ -1123,27 +974,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9c04f884-bc35-4639-b143-b336f2f33450",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "execution.xt"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0d483a5b-8cc3-427d-b26a-778e7325315c",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "execution.xt.sum()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "1dee63a3-5b16-4e46-80bc-fce5733bf920",
+   "id": "ee7120e3-53f8-4c97-af13-76b4743108e5",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -1153,21 +984,86 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b1196568-2b7c-4010-8396-8c749d5e6e88",
+   "id": "588547f0-6127-40c6-8000-6df7024db962",
    "metadata": {},
    "outputs": [],
    "source": [
-    "execution.xt.sum()"
+    "xtl_ = execution.xt\n",
+    "xtl_.sum()"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "901361e7-be1d-4baa-a952-9aed5de45dfa",
+   "id": "aaf86b6c-739e-4576-b40f-c9060f06fce0",
    "metadata": {},
    "outputs": [],
    "source": [
-    "len(executionagent.memory)"
+    "execution = Execution(T, N, sigma, X, gamma, eta, lamb_high)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f0495fc5-db82-4939-9674-f642afefdfa9",
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "executionagent = ExecutionAgent(None, feature=None,\n",
+    "                    n_features=execution.N + 3,\n",
+    "                    env=execution, hu=64, lr=0.0001,\n",
+    "                    rng='decreasing')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1020e11b-f61f-42dc-9f36-bc2508787566",
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "%time executionagent.learn(episodes)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cd2a5171-9b25-4c43-a7c5-84074563564d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "executionagent.test(1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e8be1fde-74ad-4a04-a898-7dd759c22939",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "xth_ = execution.xt\n",
+    "xth_.sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9fbc567b-4f3d-4d54-8ae7-25c34abe1f7e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.plot(xtl[1:], 'b', lw=1, label='optimal for low $\\lambda$')\n",
+    "plt.plot(xtl_[1:], 'b:', lw=1, label='learned for low $\\lambda$')\n",
+    "plt.plot(xth[1:], 'r--', lw=1, label='optimal for high $\\lambda$')\n",
+    "plt.plot(xth_[1:], 'r-.', lw=1, label='learned for high $\\lambda$')\n",
+    "plt.xlabel('trading day')\n",
+    "plt.ylabel('trade size')\n",
+    "plt.legend();"
    ]
   },
   {
@@ -1183,8 +1079,8 @@
  ],
  "metadata": {
   "kernelspec": {
-   "display_name": "Python 3",
-   "name": "python3"
+   "name": "python3",
+   "display_name": "Python 3"
   },
   "language_info": {
    "codemirror_mode": {

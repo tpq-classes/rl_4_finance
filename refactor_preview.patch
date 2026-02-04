@@ -1,0 +1,1213 @@
+diff --git a/02_rlfinance.ipynb b/02_rlfinance.ipynb
+index 694ee8a..8ebbc25 100755
+--- a/02_rlfinance.ipynb
++++ b/02_rlfinance.ipynb
+@@ -48,8 +48,9 @@
+   },
+   {
+    "cell_type": "code",
+-   "metadata": {},
+    "execution_count": null,
++   "id": "a49941f9",
++   "metadata": {},
+    "outputs": [],
+    "source": [
+     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
+@@ -379,14 +380,27 @@
+     "tf.__version__"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "b37d19df",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup"
++   },
++   "source": [
++    "from tensorflow.python.framework.ops import disable_eager_execution\n",
++    "disable_eager_execution()  # <1>"
++   ]
++  },
+   {
+    "cell_type": "code",
+-   "execution_count": 18,
+-   "id": "a21cd6c5-058b-45cb-abfa-78a9cbb3633b",
+-   "metadata": {},
++   "execution_count": null,
++   "id": "f0721aa2",
++   "metadata": {
++    "auto_refactor_role": "generated"
++   },
+    "outputs": [],
+    "source": [
+-    "from tensorflow.python.framework.ops import disable_eager_execution\n",
+     "disable_eager_execution()  # <1>"
+    ]
+   },
+@@ -449,11 +463,12 @@
+    ]
+   },
+   {
+-   "cell_type": "code",
+-   "execution_count": 23,
+-   "id": "03e2299c-14bd-4cc8-af41-89b69d532544",
+-   "metadata": {},
+-   "outputs": [],
++   "cell_type": "raw",
++   "id": "87306f53",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup"
++   },
+    "source": [
+     "class DQLAgent(DQLAgent):\n",
+     "    def act(self, state):\n",
+@@ -473,6 +488,33 @@
+     "            self.epsilon *= self.epsilon_decay  # <8>"
+    ]
+   },
++  {
++   "cell_type": "code",
++   "execution_count": null,
++   "id": "020d5de9",
++   "metadata": {
++    "auto_refactor_role": "generated"
++   },
++   "outputs": [],
++   "source": [
++    "class DQLAgent(DQLAgent):\n",
++    "    def act(self, state):\n",
++    "        if random.random() < self.epsilon:\n",
++    "            return self.env.action_space.sample()  # <1>\n",
++    "        return np.argmax(self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0])  # <2>\n",
++    "    def replay(self):\n",
++    "        batch = random.sample(self.memory, self.batch_size)  # <3>\n",
++    "        for state, action, next_state, reward, done in batch:\n",
++    "            if not done:\n",
++    "                reward += self.gamma * np.amax(\n",
++    "                    self.model(tf.convert_to_tensor(next_state, dtype=tf.float32), training=False).numpy()[0])  # <4>\n",
++    "            target = self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()  # <5>\n",
++    "            target[0, action] = reward  # <6>\n",
++    "            self.model.fit(state, target, epochs=2, verbose=False)  # <7>\n",
++    "        if self.epsilon > self.epsilon_min:\n",
++    "            self.epsilon *= self.epsilon_decay  # <8>"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": 24,
+@@ -504,11 +546,35 @@
+     "        print()"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "696d1391",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup"
++   },
++   "source": [
++    "class DQLAgent(DQLAgent):\n",
++    "    def test(self, episodes):\n",
++    "        for e in range(1, episodes + 1):\n",
++    "            state, _ = self.env.reset()\n",
++    "            state = np.reshape(state, [1, 4])\n",
++    "            for f in range(1, 5001):\n",
++    "                action = np.argmax(self.model.predict(state)[0])  # <1>\n",
++    "                state, reward, done, trunc, _ = self.env.step(action)\n",
++    "                state = np.reshape(state, [1, 4])\n",
++    "                if done or trunc:\n",
++    "                    print(f, end=' ')\n",
++    "                    break"
++   ]
++  },
+   {
+    "cell_type": "code",
+-   "execution_count": 25,
+-   "id": "6a44a5f9-af9b-4929-a5c4-19e87f871c78",
+-   "metadata": {},
++   "execution_count": null,
++   "id": "5532f37c",
++   "metadata": {
++    "auto_refactor_role": "generated"
++   },
+    "outputs": [],
+    "source": [
+     "class DQLAgent(DQLAgent):\n",
+@@ -517,7 +583,7 @@
+     "            state, _ = self.env.reset()\n",
+     "            state = np.reshape(state, [1, 4])\n",
+     "            for f in range(1, 5001):\n",
+-    "                action = np.argmax(self.model.predict(state)[0])  # <1>\n",
++    "                action = np.argmax(self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0])  # <1>\n",
+     "                state, reward, done, trunc, _ = self.env.step(action)\n",
+     "                state = np.reshape(state, [1, 4])\n",
+     "                if done or trunc:\n",
+@@ -609,8 +675,8 @@
+  ],
+  "metadata": {
+   "kernelspec": {
+-   "name": "python3",
+-   "display_name": "Python 3"
++   "display_name": "Python 3",
++   "name": "python3"
+   },
+   "language_info": {
+    "codemirror_mode": {
+@@ -627,4 +693,4 @@
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+-}
+\ No newline at end of file
++}
+diff --git a/03_rlfinance.ipynb b/03_rlfinance.ipynb
+index 813296c..7fd77c9 100755
+--- a/03_rlfinance.ipynb
++++ b/03_rlfinance.ipynb
+@@ -40,8 +40,9 @@
+   },
+   {
+    "cell_type": "code",
+-   "metadata": {},
+    "execution_count": null,
++   "id": "dd68580f",
++   "metadata": {},
+    "outputs": [],
+    "source": [
+     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
+@@ -402,16 +403,27 @@
+    ]
+   },
+   {
+-   "cell_type": "code",
+-   "execution_count": null,
+-   "id": "c047b3c4-d7ca-4e17-b290-6dfce70690fc",
+-   "metadata": {},
+-   "outputs": [],
++   "cell_type": "raw",
++   "id": "9a0b8efd",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup"
++   },
+    "source": [
+     "from tensorflow.python.framework.ops import disable_eager_execution\n",
+     "disable_eager_execution()"
+    ]
+   },
++  {
++   "cell_type": "code",
++   "execution_count": null,
++   "id": "6791f5ec",
++   "metadata": {
++    "auto_refactor_role": "generated"
++   },
++   "outputs": [],
++   "source": []
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+@@ -423,11 +435,12 @@
+    ]
+   },
+   {
+-   "cell_type": "code",
+-   "execution_count": null,
+-   "id": "9a1c06c7-6477-4a73-9bf5-68b497c52e8c",
+-   "metadata": {},
+-   "outputs": [],
++   "cell_type": "raw",
++   "id": "b780cd8e",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup"
++   },
+    "source": [
+     "class DQLAgent:\n",
+     "    def __init__(self, symbol, feature, min_accuracy, n_features=4):\n",
+@@ -502,6 +515,88 @@
+     "        self.env.min_accuracy = ma  # <2>"
+    ]
+   },
++  {
++   "cell_type": "code",
++   "execution_count": null,
++   "id": "cde4e8cb",
++   "metadata": {
++    "auto_refactor_role": "generated"
++   },
++   "outputs": [],
++   "source": [
++    "class DQLAgent:\n",
++    "    def __init__(self, symbol, feature, min_accuracy, n_features=4):\n",
++    "        self.epsilon = 1.0\n",
++    "        self.epsilon_decay = 0.9975\n",
++    "        self.epsilon_min = 0.1\n",
++    "        self.memory = list()\n",
++    "        self.batch_size = 32\n",
++    "        self.gamma = 0.5\n",
++    "        self.trewards = deque(maxlen=2000)\n",
++    "        self.max_treward = 0\n",
++    "        self.n_features = n_features\n",
++    "        self._create_model()\n",
++    "        self.env = Finance(symbol, feature,\n",
++    "                    min_accuracy, n_features)  # <1>\n",
++    "    def _create_model(self):\n",
++    "        self.model = Sequential()\n",
++    "        self.model.add(Dense(24, activation='relu',\n",
++    "                             input_dim=self.n_features))\n",
++    "        self.model.add(Dense(24, activation='relu'))\n",
++    "        self.model.add(Dense(2, activation='linear'))\n",
++    "        self.model.compile(loss='mse', optimizer=opt)\n",
++    "    def act(self, state):\n",
++    "        if random.random() < self.epsilon:\n",
++    "            return self.env.action_space.sample()\n",
++    "        return np.argmax(self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0])\n",
++    "    def replay(self):\n",
++    "        batch = random.sample(self.memory, self.batch_size)\n",
++    "        for state, action, next_state, reward, done in batch:\n",
++    "            if not done:\n",
++    "                reward += self.gamma * np.amax(\n",
++    "                    self.model(tf.convert_to_tensor(next_state, dtype=tf.float32), training=False).numpy()[0])\n",
++    "            target = self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()\n",
++    "            target[0, action] = reward\n",
++    "            self.model.fit(state, target, epochs=1, verbose=False)\n",
++    "        if self.epsilon > self.epsilon_min:\n",
++    "            self.epsilon *= self.epsilon_decay\n",
++    "    def learn(self, episodes):\n",
++    "        for e in range(1, episodes + 1):\n",
++    "            state, _ = self.env.reset()\n",
++    "            state = np.reshape(state, [1, self.n_features])\n",
++    "            for f in range(1, 5000):\n",
++    "                action = self.act(state)\n",
++    "                next_state, reward, done, trunc, _ = self.env.step(action)\n",
++    "                next_state = np.reshape(next_state, [1, self.n_features])\n",
++    "                self.memory.append(\n",
++    "                    [state, action, next_state, reward, done])\n",
++    "                state = next_state \n",
++    "                if done:\n",
++    "                    self.trewards.append(f)\n",
++    "                    self.max_treward = max(self.max_treward, f)\n",
++    "                    templ = f'episode={e:4d} | treward={f:4d}'\n",
++    "                    templ += f' | max={self.max_treward:4d}'\n",
++    "                    print(templ, end='\\r')\n",
++    "                    break\n",
++    "            if len(self.memory) > self.batch_size:\n",
++    "                self.replay()\n",
++    "        print()\n",
++    "    def test(self, episodes):\n",
++    "        ma = self.env.min_accuracy  # <2>\n",
++    "        self.env.min_accuracy = 0.5  # <3>\n",
++    "        for e in range(1, episodes + 1):\n",
++    "            state, _ = self.env.reset()\n",
++    "            state = np.reshape(state, [1, self.n_features])\n",
++    "            for f in range(1, 5001):\n",
++    "                action = np.argmax(self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0])\n",
++    "                state, reward, done, trunc, _ = self.env.step(action)\n",
++    "                state = np.reshape(state, [1, self.n_features])\n",
++    "                if done:\n",
++    "                    print(f'total reward={f} | accuracy={self.env.accuracy:.3f}')\n",
++    "                    break\n",
++    "        self.env.min_accuracy = ma  # <2>"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+@@ -585,8 +680,8 @@
+  ],
+  "metadata": {
+   "kernelspec": {
+-   "name": "python3",
+-   "display_name": "Python 3"
++   "display_name": "Python 3",
++   "name": "python3"
+   },
+   "language_info": {
+    "codemirror_mode": {
+@@ -603,4 +698,4 @@
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+-}
+\ No newline at end of file
++}
+diff --git a/07_rlfinance.ipynb b/07_rlfinance.ipynb
+index f1abd99..28836c4 100755
+--- a/07_rlfinance.ipynb
++++ b/07_rlfinance.ipynb
+@@ -40,8 +40,9 @@
+   },
+   {
+    "cell_type": "code",
+-   "metadata": {},
+    "execution_count": null,
++   "id": "0a4350d3",
++   "metadata": {},
+    "outputs": [],
+    "source": [
+     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
+@@ -712,11 +713,41 @@
+     "from scipy.optimize import minimize"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "8a6b1df2",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "class HedgingAgent(HedgingAgent):\n",
++    "    def opt_action(self, state):\n",
++    "        bnds = [(0, 1)]  # <1>\n",
++    "        def f(state, x):  # <2>\n",
++    "            state[0, 4] = x  # <3>\n",
++    "            state[0, 5] = ((state[0, 3] -\n",
++    "                            x * state[0, 0]) /\n",
++    "                            state[0, 1])  # <4>\n",
++    "            return self.model.predict(state)[0, 0]  # <5>\n",
++    "        action = minimize(lambda x: -f(state, x), 0.5,\n",
++    "                          bounds=bnds, method='Powell')['x'][0]  # <6>\n",
++    "        return action\n",
++    "        \n",
++    "    def act(self, state):\n",
++    "        if random.random() <= self.epsilon:\n",
++    "            return self.env.action_space.sample()\n",
++    "        action = self.opt_action(state)  # <7>\n",
++    "        return action"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "6085e91b-cc2e-4c99-8d05-205892fb0272",
++   "id": "c48c83db",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+@@ -729,7 +760,7 @@
+     "            state[0, 5] = ((state[0, 3] -\n",
+     "                            x * state[0, 0]) /\n",
+     "                            state[0, 1])  # <4>\n",
+-    "            return self.model.predict(state)[0, 0]  # <5>\n",
++    "            return self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0, 0]  # <5>\n",
+     "        action = minimize(lambda x: -f(state, x), 0.5,\n",
+     "                          bounds=bnds, method='Powell')['x'][0]  # <6>\n",
+     "        return action\n",
+@@ -741,11 +772,40 @@
+     "        return action"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "b311f9c3",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "class HedgingAgent(HedgingAgent):\n",
++    "    def replay(self):\n",
++    "        batch = random.sample(self.memory, self.batch_size)\n",
++    "        for state, action, next_state, reward, done in batch:\n",
++    "            if not done:\n",
++    "                action = self.opt_action(next_state)  # <1>\n",
++    "                next_state[0, 4] = action  # <2>\n",
++    "                next_state[0, 5] = ((next_state[0, 3] -\n",
++    "                                     action * next_state[0, 0]) /\n",
++    "                                     next_state[0, 1])  # <3>\n",
++    "                reward += (self.gamma *\n",
++    "                    self.model.predict(next_state)[0, 0])  # <4>\n",
++    "            reward = np.array([reward])\n",
++    "            self.model.fit(state, reward, epochs=1,\n",
++    "                           verbose=False)\n",
++    "        if self.epsilon > self.epsilon_min:\n",
++    "            self.epsilon *= self.epsilon_decay"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "f14d3677-9499-4c71-973e-3b9008028dcc",
++   "id": "cc843802",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+@@ -761,7 +821,7 @@
+     "                                     action * next_state[0, 0]) /\n",
+     "                                     next_state[0, 1])  # <3>\n",
+     "                reward += (self.gamma *\n",
+-    "                    self.model.predict(next_state)[0, 0])  # <4>\n",
++    "                    self.model(tf.convert_to_tensor(next_state, dtype=tf.float32), training=False).numpy()[0, 0])  # <4>\n",
+     "            reward = np.array([reward])\n",
+     "            self.model.fit(state, reward, epochs=1,\n",
+     "                           verbose=False)\n",
+@@ -966,8 +1026,8 @@
+  ],
+  "metadata": {
+   "kernelspec": {
+-   "name": "python3",
+-   "display_name": "Python 3"
++   "display_name": "Python 3",
++   "name": "python3"
+   },
+   "language_info": {
+    "codemirror_mode": {
+@@ -984,4 +1044,4 @@
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+-}
+\ No newline at end of file
++}
+diff --git a/08_rlfinance_2ac.ipynb b/08_rlfinance_2ac.ipynb
+index 1b5df74..dd84838 100755
+--- a/08_rlfinance_2ac.ipynb
++++ b/08_rlfinance_2ac.ipynb
+@@ -40,8 +40,9 @@
+   },
+   {
+    "cell_type": "code",
+-   "metadata": {},
+    "execution_count": null,
++   "id": "59b8bbba",
++   "metadata": {},
+    "outputs": [],
+    "source": [
+     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
+@@ -493,11 +494,40 @@
+     "from scipy.optimize import minimize"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "514352ba",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "class InvestingAgent(InvestingAgent):\n",
++    "    def opt_action(self, state):\n",
++    "        bnds = [(0, 1)]  # <1>\n",
++    "        def f(state, x):  # <2>\n",
++    "            s = state.copy()\n",
++    "            s[0, 2] = x  # <3>\n",
++    "            s[0, 3] = 1 - x  # <4>\n",
++    "            return self.model.predict(s)[0, 0]  # <5>\n",
++    "        action = minimize(lambda x: -f(state, x), 0.5,\n",
++    "                          bounds=bnds, method='Powell')['x'][0]  # <6>\n",
++    "        return action\n",
++    "        \n",
++    "    def act(self, state):\n",
++    "        if random.random() <= self.epsilon:\n",
++    "            return self.env.action_space.sample()\n",
++    "        action = self.opt_action(state)  # <7>\n",
++    "        return action"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "6085e91b-cc2e-4c99-8d05-205892fb0272",
++   "id": "9333cb2a",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+@@ -509,7 +539,7 @@
+     "            s = state.copy()\n",
+     "            s[0, 2] = x  # <3>\n",
+     "            s[0, 3] = 1 - x  # <4>\n",
+-    "            return self.model.predict(s)[0, 0]  # <5>\n",
++    "            return self.model(tf.convert_to_tensor(s, dtype=tf.float32), training=False).numpy()[0, 0]  # <5>\n",
+     "        action = minimize(lambda x: -f(state, x), 0.5,\n",
+     "                          bounds=bnds, method='Powell')['x'][0]  # <6>\n",
+     "        return action\n",
+@@ -521,11 +551,38 @@
+     "        return action"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "2613aba8",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "class InvestingAgent(InvestingAgent):\n",
++    "    def replay(self):\n",
++    "        batch = random.sample(self.memory, self.batch_size)\n",
++    "        for state, action, next_state, reward, done in batch:\n",
++    "            if not done:\n",
++    "                action = self.opt_action(next_state)  # <1>\n",
++    "                next_state[0, 2] = action  # <2>\n",
++    "                next_state[0, 3] = 1 - action  # <3>\n",
++    "                reward += (self.gamma *\n",
++    "                    self.model.predict(next_state)[0, 0])  # <4>\n",
++    "            reward = np.array([reward])\n",
++    "            self.model.fit(state, reward, epochs=1,\n",
++    "                           verbose=False)\n",
++    "        if self.epsilon > self.epsilon_min:\n",
++    "            self.epsilon *= self.epsilon_decay"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "f14d3677-9499-4c71-973e-3b9008028dcc",
++   "id": "90fbb143",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+@@ -539,7 +596,7 @@
+     "                next_state[0, 2] = action  # <2>\n",
+     "                next_state[0, 3] = 1 - action  # <3>\n",
+     "                reward += (self.gamma *\n",
+-    "                    self.model.predict(next_state)[0, 0])  # <4>\n",
++    "                    self.model(tf.convert_to_tensor(next_state, dtype=tf.float32), training=False).numpy()[0, 0])  # <4>\n",
+     "            reward = np.array([reward])\n",
+     "            self.model.fit(state, reward, epochs=1,\n",
+     "                           verbose=False)\n",
+@@ -1293,8 +1350,8 @@
+  ],
+  "metadata": {
+   "kernelspec": {
+-   "name": "python3",
+-   "display_name": "Python 3"
++   "display_name": "Python 3",
++   "name": "python3"
+   },
+   "language_info": {
+    "codemirror_mode": {
+@@ -1311,4 +1368,4 @@
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+-}
+\ No newline at end of file
++}
+diff --git a/09_rlfinance.ipynb b/09_rlfinance.ipynb
+index 771e0f9..993ce7c 100755
+--- a/09_rlfinance.ipynb
++++ b/09_rlfinance.ipynb
+@@ -40,8 +40,9 @@
+   },
+   {
+    "cell_type": "code",
+-   "metadata": {},
+    "execution_count": null,
++   "id": "2d2ef1d4",
++   "metadata": {},
+    "outputs": [],
+    "source": [
+     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
+@@ -851,13 +852,13 @@
+    ]
+   },
+   {
+-   "cell_type": "code",
+-   "execution_count": null,
+-   "id": "f59596a7-41b8-4be0-a306-34abf31afd3b",
++   "cell_type": "raw",
++   "id": "4a73884e",
+    "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
+     "tags": []
+    },
+-   "outputs": [],
+    "source": [
+     "class ExecutionAgent(ExecutionAgent):    \n",
+     "    def act(self, state):\n",
+@@ -871,11 +872,30 @@
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "f14d3677-9499-4c71-973e-3b9008028dcc",
++   "id": "7ea5fb85",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
++   "source": [
++    "class ExecutionAgent(ExecutionAgent):    \n",
++    "    def act(self, state):\n",
++    "        if random.random() <= self.epsilon or self.episodes < 250:  # <1>\n",
++    "            return min(self.rn[self.f], state[0, -2])  # <2>\n",
++    "        else:\n",
++    "            action = self.actor(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0, 0]  # <3>\n",
++    "        return action"
++   ]
++  },
++  {
++   "cell_type": "raw",
++   "id": "49f6c839",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
+    "source": [
+     "class ExecutionAgent(ExecutionAgent):\n",
+     "    def replay(self):\n",
+@@ -899,9 +919,38 @@
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "cd9816c9-5c62-4f51-807f-f82556d77589",
+-   "metadata": {},
++   "id": "07114a25",
++   "metadata": {
++    "auto_refactor_role": "generated",
++    "tags": []
++   },
+    "outputs": [],
++   "source": [
++    "class ExecutionAgent(ExecutionAgent):\n",
++    "    def replay(self):\n",
++    "        batch = random.sample(self.memory, self.batch_size)\n",
++    "        for state, action, next_state, reward, done in batch:\n",
++    "            target = reward\n",
++    "            if not done:\n",
++    "                target += self.eta * self.critic(tf.convert_to_tensor(next_state, dtype=tf.float32), training=False).numpy()[0, 0]  # <1>\n",
++    "                self.critic.fit(state, np.array([target]),\n",
++    "                        epochs=1, verbose=False)  # <2>\n",
++    "                # advantage = target - self.critic(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0, 0]\n",
++    "                self.actor.fit(state, np.array([action]),\n",
++    "                        # sample_weight=np.array([advantage]),\n",
++    "                        epochs=1, verbose=False)  # <3> \n",
++    "        if self.epsilon > self.epsilon_min:\n",
++    "            self.epsilon *= self.epsilon_decay\n",
++    "        self._generate_rn()  # <4>"
++   ]
++  },
++  {
++   "cell_type": "raw",
++   "id": "0465b025",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup"
++   },
+    "source": [
+     "class ExecutionAgent(ExecutionAgent):\n",
+     "    def test(self, episodes, verbose=True):\n",
+@@ -922,6 +971,34 @@
+     "            print(self.env.xt)"
+    ]
+   },
++  {
++   "cell_type": "code",
++   "execution_count": null,
++   "id": "cdbbec26",
++   "metadata": {
++    "auto_refactor_role": "generated"
++   },
++   "outputs": [],
++   "source": [
++    "class ExecutionAgent(ExecutionAgent):\n",
++    "    def test(self, episodes, verbose=True):\n",
++    "        for e in range(1, episodes + 1):\n",
++    "            state, _ = self.env.reset()\n",
++    "            state = self._reshape(state)\n",
++    "            treward = 0\n",
++    "            for _ in range(1, self.env.N + 1):\n",
++    "                action = self.actor(tf.convert_to_tensor(state, dtype=tf.float32), training=False).numpy()[0, 0]  # <1>\n",
++    "                state, reward, done, trunc, _ = self.env.step(action)\n",
++    "                state = self._reshape(state)\n",
++    "                treward += reward\n",
++    "                if done:\n",
++    "                    templ = f'total reward={treward:4.3f}'\n",
++    "                    if verbose:\n",
++    "                        print(templ)\n",
++    "                    break\n",
++    "            print(self.env.xt)"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+@@ -1079,8 +1156,8 @@
+  ],
+  "metadata": {
+   "kernelspec": {
+-   "name": "python3",
+-   "display_name": "Python 3"
++   "display_name": "Python 3",
++   "name": "python3"
+   },
+   "language_info": {
+    "codemirror_mode": {
+@@ -1097,4 +1174,4 @@
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+-}
+\ No newline at end of file
++}
+diff --git a/09_rlfinance_c.ipynb b/09_rlfinance_c.ipynb
+index 40632dc..6237d9e 100755
+--- a/09_rlfinance_c.ipynb
++++ b/09_rlfinance_c.ipynb
+@@ -40,8 +40,9 @@
+   },
+   {
+    "cell_type": "code",
+-   "metadata": {},
+    "execution_count": null,
++   "id": "4642e569",
++   "metadata": {},
+    "outputs": [],
+    "source": [
+     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
+@@ -873,11 +874,42 @@
+     "from scipy.optimize import minimize"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "baf67a8f",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "class ExecutionAgent(ExecutionAgent):\n",
++    "    def opt_action(self, state):\n",
++    "        bnds = [(0, state[0, 0])]\n",
++    "        def f(state, x):\n",
++    "            s = np.copy(state)\n",
++    "            s[0, 2] = x\n",
++    "            return self.model.predict(s)[0, 0]\n",
++    "        action = minimize(lambda x: -f(state, x),\n",
++    "                          state[0, 0] / 2,\n",
++    "                          bounds=bnds,\n",
++    "                          method='Powell'\n",
++    "                         )['x'][0]\n",
++    "        return action\n",
++    "        \n",
++    "    def act(self, state):\n",
++    "        if random.random() <= self.epsilon or self.episodes < 250:\n",
++    "            return min(self.rn[self.f], state[0, 0])\n",
++    "        else: \n",
++    "            return self.opt_action(state)"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "9126cb97-dec7-4bd3-bdbd-28a98d520615",
++   "id": "f4c7f65c",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+@@ -888,7 +920,7 @@
+     "        def f(state, x):\n",
+     "            s = np.copy(state)\n",
+     "            s[0, 2] = x\n",
+-    "            return self.model.predict(s)[0, 0]\n",
++    "            return self.model(tf.convert_to_tensor(s, dtype=tf.float32), training=False).numpy()[0, 0]\n",
+     "        action = minimize(lambda x: -f(state, x),\n",
+     "                          state[0, 0] / 2,\n",
+     "                          bounds=bnds,\n",
+@@ -903,11 +935,38 @@
+     "            return self.opt_action(state)"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "f7efad12",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "class ExecutionAgent(ExecutionAgent):\n",
++    "    def replay(self):\n",
++    "        batch = random.sample(self.memory, self.batch_size)\n",
++    "        for state, action, next_state, reward, done in batch:\n",
++    "            if not done:\n",
++    "                action = self.opt_action(next_state)\n",
++    "                ns = np.copy(next_state)\n",
++    "                ns[0, 2] = action\n",
++    "                reward = (self.gamma *\n",
++    "                    self.model.predict(ns)[0, 0])\n",
++    "            reward = np.array([reward])\n",
++    "            self.model.fit(state, reward, epochs=1,\n",
++    "                           verbose=False)\n",
++    "        if self.epsilon > self.epsilon_min:\n",
++    "            self.epsilon *= self.epsilon_decay"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "f14d3677-9499-4c71-973e-3b9008028dcc",
++   "id": "2f223daf",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+@@ -921,7 +980,7 @@
+     "                ns = np.copy(next_state)\n",
+     "                ns[0, 2] = action\n",
+     "                reward = (self.gamma *\n",
+-    "                    self.model.predict(ns)[0, 0])\n",
++    "                    self.model(tf.convert_to_tensor(ns, dtype=tf.float32), training=False).numpy()[0, 0])\n",
+     "            reward = np.array([reward])\n",
+     "            self.model.fit(state, reward, epochs=1,\n",
+     "                           verbose=False)\n",
+@@ -1124,8 +1183,8 @@
+  ],
+  "metadata": {
+   "kernelspec": {
+-   "name": "python3",
+-   "display_name": "Python 3"
++   "display_name": "Python 3",
++   "name": "python3"
+   },
+   "language_info": {
+    "codemirror_mode": {
+@@ -1142,4 +1201,4 @@
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+-}
+\ No newline at end of file
++}
+diff --git a/a_rlfinance.ipynb b/a_rlfinance.ipynb
+index 0128c77..aa45c9c 100755
+--- a/a_rlfinance.ipynb
++++ b/a_rlfinance.ipynb
+@@ -40,8 +40,9 @@
+   },
+   {
+    "cell_type": "code",
+-   "metadata": {},
+    "execution_count": null,
++   "id": "93283305",
++   "metadata": {},
+    "outputs": [],
+    "source": [
+     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
+@@ -278,13 +279,13 @@
+    ]
+   },
+   {
+-   "cell_type": "code",
+-   "execution_count": null,
+-   "id": "3ed28631-9d46-4cc5-8573-2d4c5edff9f1",
++   "cell_type": "raw",
++   "id": "a55276d4",
+    "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
+     "tags": []
+    },
+-   "outputs": [],
+    "source": [
+     "model.predict(X)[:6]"
+    ]
+@@ -292,11 +293,24 @@
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "d1aac7ea-7228-4699-b10a-21c4e4a3ac8a",
++   "id": "1513022a",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
++   "source": [
++    "model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()[:6]"
++   ]
++  },
++  {
++   "cell_type": "raw",
++   "id": "2c40c4c5",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
+    "source": [
+     "np.where(model.predict(X) > 0.5, 1, 0)[:6]"
+    ]
+@@ -304,15 +318,41 @@
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "2e462c06-47a4-483f-a8e2-c7e19fbfb578",
++   "id": "83f995ef",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
++   "source": [
++    "np.where(model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy() > 0.5, 1, 0)[:6]"
++   ]
++  },
++  {
++   "cell_type": "raw",
++   "id": "d0f38e49",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
+    "source": [
+     "y_ = np.where(model.predict(X) > 0.5, 1, 0).flatten()"
+    ]
+   },
++  {
++   "cell_type": "code",
++   "execution_count": null,
++   "id": "e4110cc2",
++   "metadata": {
++    "auto_refactor_role": "generated",
++    "tags": []
++   },
++   "outputs": [],
++   "source": [
++    "y_ = np.where(model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy() > 0.5, 1, 0).flatten()"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+@@ -475,16 +515,29 @@
+     "%time model.fit(X, y, epochs=1000, verbose=False)"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "538ebe76",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "model.predict(X)[:6].flatten()"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "db79de0d-8891-4e84-8f2e-3afab76468b7",
++   "id": "37dccfe1",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+    "source": [
+-    "model.predict(X)[:6].flatten()"
++    "model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()[:6].flatten()"
+    ]
+   },
+   {
+@@ -499,16 +552,29 @@
+     "y[:6]"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "edf8c1f8",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "y_ = model.predict(X).flatten()"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "b0d0bdb0-6913-4fa0-a83e-d755d11a9889",
++   "id": "37f055fe",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+    "source": [
+-    "y_ = model.predict(X).flatten()"
++    "y_ = model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy().flatten()"
+    ]
+   },
+   {
+@@ -697,16 +763,29 @@
+     "%time model.fit(X, y, epochs=5000, verbose=False)"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "7f9d1be3",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "model.predict(X)[:6]"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "bcb011af-ac5a-43e3-890d-a7e38a9ad608",
++   "id": "59820626",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+    "source": [
+-    "model.predict(X)[:6]"
++    "model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()[:6]"
+    ]
+   },
+   {
+@@ -721,16 +800,29 @@
+     "y[:6]"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "564b252d",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "y_ = model.predict(X)"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "0731f3ee-fb16-4f1f-9b7e-ef60c14ba181",
++   "id": "4d3e59be",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+    "source": [
+-    "y_ = model.predict(X)"
++    "y_ = model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()"
+    ]
+   },
+   {
+@@ -855,16 +947,29 @@
+     "%time model.fit(X, y, epochs=5000, verbose=False)"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "99c40329",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "model.predict(X)[:6]"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "0c73e785-bb61-4a0a-84b5-3797b89c7bc9",
++   "id": "f6b312c0",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+    "source": [
+-    "model.predict(X)[:6]"
++    "model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()[:6]"
+    ]
+   },
+   {
+@@ -879,16 +984,29 @@
+     "y[:6]"
+    ]
+   },
++  {
++   "cell_type": "raw",
++   "id": "ca5d1e8c",
++   "metadata": {
++    "auto_refactor_original_cell_type": "code",
++    "auto_refactor_role": "raw_backup",
++    "tags": []
++   },
++   "source": [
++    "y_ = model.predict(X)"
++   ]
++  },
+   {
+    "cell_type": "code",
+    "execution_count": null,
+-   "id": "023856a1-559d-4ef7-b29b-edcb3d865043",
++   "id": "1c939696",
+    "metadata": {
++    "auto_refactor_role": "generated",
+     "tags": []
+    },
+    "outputs": [],
+    "source": [
+-    "y_ = model.predict(X)"
++    "y_ = model(tf.convert_to_tensor(X, dtype=tf.float32), training=False).numpy()"
+    ]
+   },
+   {
+@@ -928,8 +1046,8 @@
+  ],
+  "metadata": {
+   "kernelspec": {
+-   "name": "python3",
+-   "display_name": "Python 3"
++   "display_name": "Python 3",
++   "name": "python3"
+   },
+   "language_info": {
+    "codemirror_mode": {
+@@ -946,4 +1064,4 @@
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+-}
+\ No newline at end of file
++}

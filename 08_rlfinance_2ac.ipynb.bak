@@ -40,9 +40,8 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "59b8bbba",
    "metadata": {},
+   "execution_count": null,
    "outputs": [],
    "source": [
     "!git clone https://github.com/tpq-classes/rl_4_finance.git\n",
@@ -495,13 +494,13 @@
    ]
   },
   {
-   "cell_type": "raw",
-   "id": "514352ba",
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6085e91b-cc2e-4c99-8d05-205892fb0272",
    "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
     "tags": []
    },
+   "outputs": [],
    "source": [
     "class InvestingAgent(InvestingAgent):\n",
     "    def opt_action(self, state):\n",
@@ -525,40 +524,11 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9333cb2a",
+   "id": "f14d3677-9499-4c71-973e-3b9008028dcc",
    "metadata": {
-    "auto_refactor_role": "generated",
     "tags": []
    },
    "outputs": [],
-   "source": [
-    "class InvestingAgent(InvestingAgent):\n",
-    "    def opt_action(self, state):\n",
-    "        bnds = [(0, 1)]  # <1>\n",
-    "        def f(state, x):  # <2>\n",
-    "            s = state.copy()\n",
-    "            s[0, 2] = x  # <3>\n",
-    "            s[0, 3] = 1 - x  # <4>\n",
-    "            return self.model(tf.convert_to_tensor(s, dtype=tf.float32), training=False).numpy()[0, 0]  # <5>\n",
-    "        action = minimize(lambda x: -f(state, x), 0.5,\n",
-    "                          bounds=bnds, method='Powell')['x'][0]  # <6>\n",
-    "        return action\n",
-    "        \n",
-    "    def act(self, state):\n",
-    "        if random.random() <= self.epsilon:\n",
-    "            return self.env.action_space.sample()\n",
-    "        action = self.opt_action(state)  # <7>\n",
-    "        return action"
-   ]
-  },
-  {
-   "cell_type": "raw",
-   "id": "2613aba8",
-   "metadata": {
-    "auto_refactor_original_cell_type": "code",
-    "auto_refactor_role": "raw_backup",
-    "tags": []
-   },
    "source": [
     "class InvestingAgent(InvestingAgent):\n",
     "    def replay(self):\n",
@@ -570,33 +540,6 @@
     "                next_state[0, 3] = 1 - action  # <3>\n",
     "                reward += (self.gamma *\n",
     "                    self.model.predict(next_state)[0, 0])  # <4>\n",
-    "            reward = np.array([reward])\n",
-    "            self.model.fit(state, reward, epochs=1,\n",
-    "                           verbose=False)\n",
-    "        if self.epsilon > self.epsilon_min:\n",
-    "            self.epsilon *= self.epsilon_decay"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "90fbb143",
-   "metadata": {
-    "auto_refactor_role": "generated",
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "class InvestingAgent(InvestingAgent):\n",
-    "    def replay(self):\n",
-    "        batch = random.sample(self.memory, self.batch_size)\n",
-    "        for state, action, next_state, reward, done in batch:\n",
-    "            if not done:\n",
-    "                action = self.opt_action(next_state)  # <1>\n",
-    "                next_state[0, 2] = action  # <2>\n",
-    "                next_state[0, 3] = 1 - action  # <3>\n",
-    "                reward += (self.gamma *\n",
-    "                    self.model(tf.convert_to_tensor(next_state, dtype=tf.float32), training=False).numpy()[0, 0])  # <4>\n",
     "            reward = np.array([reward])\n",
     "            self.model.fit(state, reward, epochs=1,\n",
     "                           verbose=False)\n",
@@ -1350,8 +1293,8 @@
  ],
  "metadata": {
   "kernelspec": {
-   "display_name": "Python 3",
-   "name": "python3"
+   "name": "python3",
+   "display_name": "Python 3"
   },
   "language_info": {
    "codemirror_mode": {
