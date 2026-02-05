@@ -22,7 +22,7 @@ plt.style.use('seaborn-v0_8')
 mpl.rcParams['font.family'] = 'serif'
 np.set_printoptions(suppress=True)
 
-opt = keras.optimizers.legacy.Adam
+opt = keras.optimizers.Adam
 
 os.environ['PYTHONHASHSEED'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
