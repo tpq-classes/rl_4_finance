@@ -170,7 +170,7 @@ class InvestingAgent(DQLAgent):
             s[0, 5] = x[2]
             # s[0, 3:] = x
             pen = np.mean((state[0, 3:] - x) ** 2)
-            return self.model.predict(s)[0, 0] - pen
+            return self.model.predict(s, verbose=False)[0, 0] - pen
         try:
             state = self._reshape(state)
             self.action = minimize(lambda x: -f(state, x),
@@ -198,7 +198,7 @@ class InvestingAgent(DQLAgent):
             if not done:
                 action = self.opt_action(next_state)
                 next_state[0, 3:] = action
-                reward += self.gamma * self.model.predict(next_state)[0, 0]
+                reward += self.gamma * self.model.predict(next_state, verbose=False)[0, 0]
             reward = np.array([reward])
             self.model.fit(state, reward, epochs=1,
                            verbose=False)
