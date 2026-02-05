@@ -102,6 +102,7 @@ class DQLAgent:
             state = self._reshape(state)
             treward = 0
             for f in range(1, 5000):
+                self.f = f
                 action = self.act(state)
                 next_state, reward, done, trunc, _ = self.env.step(action)
                 treward += reward
