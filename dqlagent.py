@@ -133,7 +133,6 @@ class DQLAgent:
             state, _ = self.env.reset()
             state = self._reshape(state)
             for f in range(1, 5001):
-                # action = np.argmax(self.model.predict(state)[0])
                 q = self.model(tf.convert_to_tensor(state, dtype=tf.float32), training=False)
                 action = int(tf.argmax(q[0]).numpy())
                 state, reward, done, trunc, _ = self.env.step(action)
