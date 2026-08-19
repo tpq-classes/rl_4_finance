@@ -43,6 +43,19 @@ class action_space:
         return rn / rn.sum()
 
 class Investing:
+    # NEW SPEED OPTIMIZATION: store portfolio rows in a list and materialize the DataFrame only when it is read.
+    @property
+    def portfolios(self):
+        return pd.DataFrame(getattr(self, '_portfolio_records', []))
+
+    # NEW SPEED OPTIMIZATION: keep compatibility with existing code that assigns a DataFrame to portfolios.
+    @portfolios.setter
+    def portfolios(self, value):
+        if isinstance(value, pd.DataFrame) and not value.empty:
+            self._portfolio_records = value.to_dict('records')
+        else:
+            self._portfolio_records = []
+
     def __init__(self, asset_one, asset_two, asset_three,
                  steps=252, amount=1):
         self.asset_one = asset_one
@@ -66,7 +79,9 @@ class Investing:
         else:
             url = 'https://certificate.tpq.io/rl4finance.csv'
             self.raw = pd.read_csv(url, index_col=0, parse_dates=True).dropna()
-            self.retrieved
+            # self.retrieved
+            # NEW SPEED OPTIMIZATION: avoid re-reading the remote CSV on every reset.
+            self.retrieved = True
         self.data = pd.DataFrame()
         self.data['X'] = self.raw[self.asset_one]
         self.data['Y'] = self.raw[self.asset_two]
@@ -97,12 +112,15 @@ class Investing:
         self.portfolio_value = self.initial_balance
         self.portfolio_value_new = self.initial_balance
         self.episode += 1
+        # NEW SPEED OPTIMIZATION: maintain rolling reward statistics without rebuilding a DataFrame.
+        self._pl_pct_window = []
         self._generate_data()
         self.state, info = self._get_state()
         return self.state, info
 
     def add_results(self, pl):
-        df = pd.DataFrame({
+        # NEW SPEED OPTIMIZATION: append a plain dict instead of concatenating a one-row DataFrame every step.
+        self._portfolio_records.append({
                    'e': self.episode, 'date': self.date, 
                    'xt': self.xt, 'yt': self.yt, 'zt': self.zt,
                    'pv': self.portfolio_value, 'pv_new': self.portfolio_value_new,
@@ -110,8 +128,17 @@ class Investing:
                    'Xt': self.state[0],  'Yt': self.state[1], 'Zt': self.state[2],
                    'Xt_new': self.new_state[0],  'Yt_new': self.new_state[1],
                    'Zt_new': self.new_state[2],
-                          }, index=[0])
-        self.portfolios = pd.concat((self.portfolios, df), ignore_index=True)
+                          })
+        # df = pd.DataFrame({
+        #            'e': self.episode, 'date': self.date, 
+        #            'xt': self.xt, 'yt': self.yt, 'zt': self.zt,
+        #            'pv': self.portfolio_value, 'pv_new': self.portfolio_value_new,
+        #            'p&l[$]': pl, 'p&l[%]': pl / self.portfolio_value_new * 100,
+        #            'Xt': self.state[0],  'Yt': self.state[1], 'Zt': self.state[2],
+        #            'Xt_new': self.new_state[0],  'Yt_new': self.new_state[1],
+        #            'Zt_new': self.new_state[2],
+        #                   }, index=[0])
+        # self.portfolios = pd.concat((self.portfolios, df), ignore_index=True)
         
     def step(self, action):
         self.bar += 1
@@ -136,10 +163,18 @@ class Investing:
             self.yt = action[1]
             self.zt = action[2]
             self.add_results(pl)
-            ret = self.portfolios['p&l[%]'].iloc[-1] / 100 * 252
-            vol = self.portfolios['p&l[%]'].rolling(
-                20, min_periods=1).std().iloc[-1] * math.sqrt(252)
-            sharpe = ret / vol
+            # NEW SPEED OPTIMIZATION: update rolling Sharpe inputs from a small list instead of rebuilding rolling DataFrame statistics.
+            pl_pct = pl / self.portfolio_value_new * 100
+            self._pl_pct_window.append(pl_pct)
+            if len(self._pl_pct_window) > 20:
+                self._pl_pct_window.pop(0)
+            ret = pl_pct / 100 * 252
+            vol = np.std(self._pl_pct_window, ddof=1) * math.sqrt(252) if len(self._pl_pct_window) > 1 else 0
+            sharpe = ret / vol if vol > 0 else 0
+            # ret = self.portfolios['p&l[%]'].iloc[-1] / 100 * 252
+            # vol = self.portfolios['p&l[%]'].rolling(
+            #     20, min_periods=1).std().iloc[-1] * math.sqrt(252)
+            # sharpe = ret / vol
             reward = sharpe - pen
             self.portfolio_value = self.portfolio_value_new
         if self.bar == len(self.data) - 1:
@@ -159,31 +194,57 @@ class InvestingAgent(DQLAgent):
         self.model.add(Dense(1, activation='linear'))
         self.model.compile(loss='mse',
                 optimizer=opt(learning_rate=lr))
+
+    def _get_action_grid(self):
+        # NEW SPEED OPTIMIZATION: cache a simplex grid for batched 3-asset action search.
+        grid = getattr(self, '_action_grid', None)
+        if grid is None:
+            points = np.linspace(0, 1, 21, dtype=np.float32)
+            grid = np.array(
+                [(x, y, 1 - x - y)
+                 for x in points
+                 for y in points
+                 if x + y <= 1],
+                dtype=np.float32
+            )
+            self._action_grid = grid
+        return grid
         
     def opt_action(self, state):
-        bnds = 3 * [(0, 1)]
-        cons = [{'type': 'eq', 'fun': lambda x: x.sum() - 1}]
-        def f(state, x):
-            s = state.copy()
-            s[0, 3] = x[0]
-            s[0, 4] = x[1]
-            s[0, 5] = x[2]
-            # s[0, 3:] = x
-            pen = np.mean((state[0, 3:] - x) ** 2)
-            return self.model.predict(s, verbose=False)[0, 0] - pen
+        # NEW SPEED OPTIMIZATION: evaluate the 3-asset allocation grid in one batched model call instead of repeated SLSQP/model.predict calls.
         try:
-            state = self._reshape(state)
-            self.action = minimize(lambda x: -f(state, x),
-                                   3 * [1 / 3],
-                                   bounds=bnds,
-                                   constraints=cons,
-                                   options={
-                                       'eps': 1e-4,
-                                        },
-                                   method='SLSQP'
-                                  )['x']
+            state = self._reshape(state) if state.ndim == 1 else state.astype(np.float32, copy=True)
+            grid = self._get_action_grid()
+            states = np.repeat(state, len(grid), axis=0)
+            states[:, 3:] = grid
+            penalties = np.mean((state[0, 3:] - grid) ** 2, axis=1)
+            values = self.model(states, training=False).numpy().reshape(-1) - penalties
+            self.action = grid[np.argmax(values)]
         except:
-            self.action = self.action
+            self.action = getattr(self, 'action', np.ones(3) / 3)
+        # bnds = 3 * [(0, 1)]
+        # cons = [{'type': 'eq', 'fun': lambda x: x.sum() - 1}]
+        # def f(state, x):
+        #     s = state.copy()
+        #     s[0, 3] = x[0]
+        #     s[0, 4] = x[1]
+        #     s[0, 5] = x[2]
+        #     # s[0, 3:] = x
+        #     pen = np.mean((state[0, 3:] - x) ** 2)
+        #     return self.model.predict(s)[0, 0] - pen
+        # try:
+        #     state = self._reshape(state)
+        #     self.action = minimize(lambda x: -f(state, x),
+        #                            3 * [1 / 3],
+        #                            bounds=bnds,
+        #                            constraints=cons,
+        #                            options={
+        #                                'eps': 1e-4,
+        #                                 },
+        #                            method='SLSQP'
+        #                           )['x']
+        # except:
+        #     self.action = self.action
         return self.action
         
     def act(self, state):
@@ -194,14 +255,32 @@ class InvestingAgent(DQLAgent):
 
     def replay(self):
         batch = random.sample(self.memory, self.batch_size)
-        for state, action, next_state, reward, done in batch:
-            if not done:
-                action = self.opt_action(next_state)
-                next_state[0, 3:] = action
-                reward += self.gamma * self.model.predict(next_state, verbose=False)[0, 0]
-            reward = np.array([reward])
-            self.model.fit(state, reward, epochs=1,
-                           verbose=False)
+        # NEW SPEED OPTIMIZATION: vectorize the 3-asset Bellman target and train once per replay.
+        states = np.vstack([b[0] for b in batch]).astype(np.float32)
+        next_states = np.vstack([b[2] for b in batch]).astype(np.float32)
+        rewards = np.array([b[3] for b in batch], dtype=np.float32)
+        dones = np.array([b[4] for b in batch], dtype=np.bool_)
+        grid = self._get_action_grid()
+        candidates = np.repeat(next_states, len(grid), axis=0)
+        tiled_grid = np.tile(grid, (len(batch), 1))
+        candidates[:, 3:] = tiled_grid
+        penalties = np.mean(
+            (np.repeat(next_states[:, 3:], len(grid), axis=0) - tiled_grid) ** 2,
+            axis=1
+        ).reshape(len(batch), len(grid))
+        next_q = self.model(candidates, training=False).numpy().reshape(len(batch), len(grid))
+        best = np.argmax(next_q - penalties, axis=1)
+        next_values = next_q[np.arange(len(batch)), best]
+        targets = rewards + self.gamma * next_values * (~dones)
+        self.model.train_on_batch(states, targets.reshape(-1, 1))
+        # for state, action, next_state, reward, done in batch:
+        #     if not done:
+        #         action = self.opt_action(next_state)
+        #         next_state[0, 3:] = action
+        #         reward += self.gamma * self.model.predict(next_state)[0, 0]
+        #     reward = np.array([reward])
+        #     self.model.fit(state, reward, epochs=1,
+        #                    verbose=False)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
